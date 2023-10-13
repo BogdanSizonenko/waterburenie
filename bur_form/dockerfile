@@ -1,0 +1,10 @@
+FROM python:3.10-alpine
+
+ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE 1
+
+ADD . /bur_form
+
+WORKDIR /bur_form
+
+RUN pip install -r requirements.txt

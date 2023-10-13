@@ -1,0 +1,48 @@
+version: "4.19"
+
+services:
+  burenie:
+    image: bogdars/burenie:work
+    container_name: burenie
+    restart: always
+    volumes:
+      - static_volume:/form_page/static/
+      - ./nginx:/etc/nginx/conf.d:ro 
+    command: sh -c "python3 manage.py collectstatic --no-input &&
+                    python3 manage.py makemigrations &&
+                    python3 manage.py migrate &&
+                    gunicorn bur_form.wsgi -b 0.0.0.0:8000 --timeout 60"
+    env_file:
+      - .env
+    expose:
+      - 8000
+
+  nginx:
+    container_name: burenie_nginx
+    working_dir: /bur_form
+    image: nginx:alpine
+    restart: always
+    volumes:
+      - static_volume:/form_page/static/
+      - ./nginx:/etc/nginx/conf.d:ro  
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    depends_on:
+      - burenie
+    ports:
+     - "80:80"
+     - "443:443"
+     - "465:465"
+     
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt:rw
+      - ./certbot/www:/var/www/certbot:rw    
+    #command: certonly --webroot --webroot-path=/var/www/certbot/ --email bogdansizon@yandex.ru --agree-tos --no-eff-email -d waterburenie.ru -d www.waterburenie.ru
+    depends_on:
+      - nginx
+
+volumes:
+  static_volume:
